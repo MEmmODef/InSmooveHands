@@ -1,16 +1,16 @@
 [
     {
-        "id": "d1812f6977441004",
+        "id": "06d68578bb544e93",
         "type": "tab",
-        "label": "main flex",
+        "label": "main grip",
         "disabled": false,
         "info": "",
         "env": []
     },
     {
-        "id": "e0c4a407c0d28291",
+        "id": "e50caa73a6bbb57a",
         "type": "group",
-        "z": "d1812f6977441004",
+        "z": "06d68578bb544e93",
         "style": {
             "stroke": "#999999",
             "stroke-opacity": "1",
@@ -21,22 +21,22 @@
             "color": "#a4a4a4"
         },
         "nodes": [
-            "2088b580ddad0b05",
-            "749a61a2d5d54f03",
-            "1642a8455289f7c5",
-            "0be6d5ef60814b9d",
-            "30d88dc2f8017ac7"
+            "c78a2cce44b082ef",
+            "4173f140e001c24f",
+            "8a9c2dbb739d3368",
+            "7e97b404c254d868",
+            "17a09d723f80ec16"
         ],
-        "x": 14,
+        "x": 164,
         "y": 179,
         "w": 672,
         "h": 162
     },
     {
-        "id": "a2268e1066ec83fc",
+        "id": "8ae2f115c6b4c1d2",
         "type": "debug",
-        "z": "d1812f6977441004",
-        "name": "debug 12",
+        "z": "06d68578bb544e93",
+        "name": "debug 3",
         "active": false,
         "tosidebar": true,
         "console": false,
@@ -44,15 +44,15 @@
         "complete": "false",
         "statusVal": "",
         "statusType": "auto",
-        "x": 950,
+        "x": 1100,
         "y": 800,
         "wires": []
     },
     {
-        "id": "b0d955cd0bc78f79",
+        "id": "19a08e694f4ed1d3",
         "type": "debug",
-        "z": "d1812f6977441004",
-        "name": "debug 5",
+        "z": "06d68578bb544e93",
+        "name": "debug 4",
         "active": true,
         "tosidebar": true,
         "console": false,
@@ -61,14 +61,14 @@
         "targetType": "msg",
         "statusVal": "",
         "statusType": "auto",
-        "x": 540,
+        "x": 690,
         "y": 600,
         "wires": []
     },
     {
-        "id": "6a38bee4d152b1d5",
+        "id": "0775ac393f1444de",
         "type": "function",
-        "z": "d1812f6977441004",
+        "z": "06d68578bb544e93",
         "name": "Linear Regression",
         "func": "const finger = flow.get('selectedfinger') || 'POINTER'\nconst points = msg.payload || [];\nnode.warn(\"Regression recieved\" + JSON.stringify(msg.payload));\n\n\n//bail case for lack of data\nif (points.length < 2) {\n    node.warn(\"Not enough data for tracking\");\n    msg.payload = 'Not Enough data points';\n    return msg;\n}\nnode.warn(\"point length:\" + points.length);\nconst n = points.length;\n//sums for regression\nlet sumx = 0, sumy = 0, sumxy = 0, sumxx = 0;\nfor (let p of points) {\n    const x = p.x;\n    const y = p.y;\n    sumx += x;\n    sumy += y;\n    sumxy += x * y;\n    sumxx += x * x;\n\n}\n//denominator \nconst den = (n * sumxx - sumx * sumx);\nif (den === 0) {\n    msg.payload = \"failed regression\";\n    return msg;\n\n} //slope\nconst m = (n * sumxy - sumx * sumy) / den;\n//Intercept\nconst b = (sumy - m * sumx) / n;\n//R^2\nlet totSS = 0, resSS = 0;\nconst Ymean = sumy / n;\n\nfor (let p of points) {\n    const y = p.y;\n    const ydict = m * p.x + b;\n    totSS += (y - Ymean) * (y - Ymean);\n    resSS += (y - ydict) * (y - ydict);\n\n}\nlet r2 = 0;\nr2 = 1 - (resSS / totSS);\n\nlet verdict = \"No clear trend\";\n\nconst slopethresh = 0.05;\nconst r2thres = 0.4;\n\nif (Math.abs(m) < slopethresh || r2 < r2thres) {\n    verdict = \"No clear trend\";\n\n}\nelse if (m > 0) {\n    verdict = \" Good Progress\"\n\n}\nelse {\n    verdict = \"Decreasing Progress\";\n\n}\n\nconst sort = [...points].sort((a, b) => a.x - b.x);\n\nconst xmin = sort[0].x;\nconst xmax= sort[sort.length-1].x;\n\nconst sTime = flow.get('Tstart_global'+finger);\nconst linepoints = [{x: xmin, y: m*xmin + b}, {x:xmax, y:m*xmax+b}];\n\n\nconst msginfo = {\n    payload: {\n        slope: m.toFixed(4),\n        intercept: b.toFixed(4),\n        r2: r2.toFixed(4),\n        count: n,\n        verdict: verdict\n    }\n};\n\nconst msgline1 ={\n    topic: \"Trend\", \n    payload: sort.map(p =>  \n    {return{\n        x:p.x, \n        y: m*p.x + b}; \n        })      \n\n    };\n\n\nreturn [msginfo, msgline1];\n",
         "outputs": 2,
@@ -77,86 +77,23 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 710,
+        "x": 860,
         "y": 540,
         "wires": [
             [
-                "21c3ace3e8dc5891"
+                "904e474b1ec5ef90"
             ],
             [
-                "d7bbe54f8a41fd17",
-                "a2268e1066ec83fc",
-                "24bbbd1602338813"
+                "f6c4b6b37a08528a",
+                "8ae2f115c6b4c1d2",
+                "ccddc1b4f2d8bf37"
             ]
         ]
     },
     {
-        "id": "1642a8455289f7c5",
+        "id": "3db6ae7bebb87a2a",
         "type": "function",
-        "z": "d1812f6977441004",
-        "g": "e0c4a407c0d28291",
-        "name": "STart button func",
-        "func": "const finger = flow.get('selectedfinger') || 'POINTER';\nnode.send({topic: msg.topic, payload: []});\nnode.send({topic:\"Trend\", payload: []});// clear graph\n\nflow.set('recording_'+ finger,  true); //Init\nflow.set('samples_'+finger,[]);\nflow.set('Tstart_global'+finger, Date.now());\n\n\nreturn msg;",
-        "outputs": 1,
-        "timeout": 0,
-        "noerr": 0,
-        "initialize": "",
-        "finalize": "",
-        "libs": [],
-        "x": 380,
-        "y": 240,
-        "wires": [
-            [
-                "d194b6e73168b533",
-                "2088b580ddad0b05"
-            ]
-        ]
-    },
-    {
-        "id": "0be6d5ef60814b9d",
-        "type": "ui-button",
-        "z": "d1812f6977441004",
-        "g": "e0c4a407c0d28291",
-        "group": "81b02f13e24b12b9",
-        "name": "Start_Index",
-        "label": "Start session ",
-        "order": 2,
-        "width": "0",
-        "height": "0",
-        "emulateClick": false,
-        "tooltip": "",
-        "color": "",
-        "bgcolor": "",
-        "className": "",
-        "icon": "",
-        "iconPosition": "left",
-        "payload": "",
-        "payloadType": "str",
-        "topic": "topic",
-        "topicType": "msg",
-        "buttonColor": "",
-        "textColor": "",
-        "iconColor": "",
-        "enableClick": true,
-        "enablePointerdown": false,
-        "pointerdownPayload": "",
-        "pointerdownPayloadType": "str",
-        "enablePointerup": false,
-        "pointerupPayload": "",
-        "pointerupPayloadType": "str",
-        "x": 110,
-        "y": 240,
-        "wires": [
-            [
-                "1642a8455289f7c5",
-                "30d88dc2f8017ac7"
-            ]
-        ]
-    },
-    {
-        "id": "4478f76f5c85e519",
-        "type": "function",
-        "z": "d1812f6977441004",
+        "z": "06d68578bb544e93",
         "name": "Stop button Function",
         "func": "const finger = flow.get('selectedfinger') || 'Index';\n\nmsg.topic =finger\nflow.set('recording_'+finger, false);\nconst samples = flow.get('samples_'+finger);\n\n\nlet out1 = null;\nlet out2 = {topic: finger, payload: samples};\n\n\n\nreturn [out1, out2];",
         "outputs": 2,
@@ -165,27 +102,27 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 290,
+        "x": 440,
         "y": 520,
         "wires": [
             [
-                "31afc75e1caf9170",
-                "d194b6e73168b533"
+                "693dc95d549f8238",
+                "495775f273f445f0"
             ],
             [
-                "6a38bee4d152b1d5",
-                "b0d955cd0bc78f79"
+                "0775ac393f1444de",
+                "19a08e694f4ed1d3"
             ]
         ]
     },
     {
-        "id": "69b2b0bda7ab8f6a",
+        "id": "db256c82619b7295",
         "type": "ui-button",
-        "z": "d1812f6977441004",
-        "group": "81b02f13e24b12b9",
+        "z": "06d68578bb544e93",
+        "group": "848d0abaf8b84005",
         "name": "Stop_Index",
         "label": "Stop Session",
-        "order": 3,
+        "order": 2,
         "width": "0",
         "height": "0",
         "emulateClick": false,
@@ -209,20 +146,20 @@
         "enablePointerup": false,
         "pointerupPayload": "",
         "pointerupPayloadType": "str",
-        "x": 80,
+        "x": 230,
         "y": 520,
         "wires": [
             [
-                "4478f76f5c85e519",
-                "06ed04643d3877e1"
+                "3db6ae7bebb87a2a",
+                "0e36256fe6e93cd6"
             ]
         ]
     },
     {
-        "id": "31afc75e1caf9170",
+        "id": "693dc95d549f8238",
         "type": "debug",
-        "z": "d1812f6977441004",
-        "name": "debug 11",
+        "z": "06d68578bb544e93",
+        "name": "debug 5",
         "active": true,
         "tosidebar": true,
         "console": false,
@@ -230,14 +167,14 @@
         "complete": "false",
         "statusVal": "",
         "statusType": "auto",
-        "x": 590,
+        "x": 740,
         "y": 420,
         "wires": []
     },
     {
-        "id": "21c3ace3e8dc5891",
+        "id": "904e474b1ec5ef90",
         "type": "ui-template",
-        "z": "d1812f6977441004",
+        "z": "06d68578bb544e93",
         "d": true,
         "group": "",
         "page": "",
@@ -253,38 +190,38 @@
         "resendOnRefresh": true,
         "templateScope": "widget:ui",
         "className": "",
-        "x": 1010,
+        "x": 1160,
         "y": 480,
         "wires": [
             []
         ]
     },
     {
-        "id": "d1746b8b91501325",
+        "id": "274d32311ed68801",
         "type": "function",
-        "z": "d1812f6977441004",
+        "z": "06d68578bb544e93",
         "name": "Data Storage and transfer ",
-        "func": "// const parts = msg.topic.split(\"/\");\n// const type = parts[0];        // \"joint\" or \"imu\"\n// const data = parts[1];\n\n// let finger, label;\n\n// // determine source\n// if (type === \"joint\") {\n//     [finger, label] = data.split(\"_\");   // POINTER, MCP\n// }\n// else if (type === \"abduction\") {\n//     finger = data;\n//     label = \"ABD\";   // name for IMU line\n// }\n// else {\n//     return null;\n// }\n\n// // filter by selected finger\n// const selected = flow.get('selectedfinger') || \"POINTER\";\n// if (finger !== selected) return null;\n\n// // convert value\n// const val = Number(msg.payload);\n// if (isNaN(val)) return null;\n\n// // time handling (linear seconds)\n// let timer = flow.get('Tstart_global');\n// if (!timer) {\n//     timer = Date.now();\n//     flow.set('Tstart_global', timer);\n// }\n\n// const t = (Date.now() - timer) / 1000;\n\n// // send to chart\n// msg.topic = label;   // MCP, PIP, DIP, ABD\n// msg.payload = {\n//     x: t,\n//     y: val\n// };\n\n// return msg\n\nmsg.topic=\"PIP\";\nmsg.payload= {x: Date.now(),\ny: Math.random()*100};\nreturn msg;",
+        "func": "const parts = msg.topic.split(\"/\");\nconst type = parts[0];        // \"joint\" or \"imu\"\nconst data = parts[1];\n\nlet finger, label;\n                   \n// determine source\nif (type === \"joint\") {\n    [finger, label] = data.split(\"_\");   // POINTER, MCP\n}\nelse if (type === \"abduction\") {\n    finger = data;\n    label = \"ABD\";   // name for IMU line\n}\nelse {\n    return null;\n}\n\n// filter by selected finger\nconst selected = flow.get('selectedfinger') || \"POINTER\";\nif (finger !== selected) return null;\n\n// convert value\nconst val = Number(msg.payload);\nif (isNaN(val)) return null;\n\n// time handling (linear seconds)\nlet timer = flow.get('Tstart_global');\nif (!timer) {\n    timer = Date.now();\n    flow.set('Tstart_global', timer);\n}\n\nconst t = (Date.now() - timer) / 1000;\n\n// send to chart\nmsg.topic = label;   // MCP, PIP, DIP, ABD\nmsg.payload = {\n    x: t,\n    y: val\n};\n\nreturn msg\n\n",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 330,
+        "x": 480,
         "y": 120,
         "wires": [
             [
-                "d194b6e73168b533",
-                "7dcaf942abcf9cf4"
+                "495775f273f445f0",
+                "50ee42cc107c619d"
             ]
         ]
     },
     {
-        "id": "7dcaf942abcf9cf4",
+        "id": "50ee42cc107c619d",
         "type": "debug",
-        "z": "d1812f6977441004",
-        "name": "debug 10",
+        "z": "06d68578bb544e93",
+        "name": "debug 6",
         "active": true,
         "tosidebar": true,
         "console": false,
@@ -293,15 +230,15 @@
         "targetType": "msg",
         "statusVal": "",
         "statusType": "auto",
-        "x": 1400,
+        "x": 1550,
         "y": 500,
         "wires": []
     },
     {
-        "id": "d7bbe54f8a41fd17",
+        "id": "f6c4b6b37a08528a",
         "type": "debug",
-        "z": "d1812f6977441004",
-        "name": "debug 2",
+        "z": "06d68578bb544e93",
+        "name": "debug 7",
         "active": true,
         "tosidebar": true,
         "console": false,
@@ -310,14 +247,14 @@
         "targetType": "msg",
         "statusVal": "",
         "statusType": "auto",
-        "x": 1780,
+        "x": 1930,
         "y": 560,
         "wires": []
     },
     {
-        "id": "f7fe840d94250ddb",
+        "id": "34342db97b83b806",
         "type": "function",
-        "z": "d1812f6977441004",
+        "z": "06d68578bb544e93",
         "name": "Save Button Function",
         "func": "const finger = flow.get('selectedfinger') || 'Index';\n\nconst samples = flow.get('samples_'+finger) || [];\nconst sampleCopy = [...samples];\n\nif (sampleCopy.length === 0){\n    node.warn('No data to store');\n    return null;\n\n\n}\n\nconst headers = Object.keys(samples[0]).join(',');\nconst rows = samples.map(row => Object.values(row).join(','));\nconst csv = [headers, ...rows].join('\\n');\n\nconst Tstamp = new Date().toDateString().replace(/[:.]/g, '-');\nconst filename = `session_${Tstamp}.csv`;\n\nmsg.payload = csv;\nmsg.filename = `/home/vboxuser/Documents/${filename}`;\n\n\nreturn msg;",
         "outputs": 1,
@@ -326,22 +263,22 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 440,
+        "x": 590,
         "y": 700,
         "wires": [
             [
-                "3cac732db55f2ed9"
+                "2ab373aaac3c785c"
             ]
         ]
     },
     {
-        "id": "3664cef4252bd3a1",
+        "id": "f63775508bbf23bb",
         "type": "ui-button",
-        "z": "d1812f6977441004",
-        "group": "81b02f13e24b12b9",
+        "z": "06d68578bb544e93",
+        "group": "848d0abaf8b84005",
         "name": "SaveSession_Index",
         "label": "Save Session",
-        "order": 4,
+        "order": 3,
         "width": 0,
         "height": 0,
         "emulateClick": false,
@@ -365,18 +302,18 @@
         "enablePointerup": false,
         "pointerupPayload": "",
         "pointerupPayloadType": "str",
-        "x": 120,
+        "x": 270,
         "y": 700,
         "wires": [
             [
-                "f7fe840d94250ddb"
+                "34342db97b83b806"
             ]
         ]
     },
     {
-        "id": "3cac732db55f2ed9",
+        "id": "2ab373aaac3c785c",
         "type": "file",
-        "z": "d1812f6977441004",
+        "z": "06d68578bb544e93",
         "name": "write file",
         "filename": "/home/vboxuser/Documents/csv",
         "filenameType": "str",
@@ -384,16 +321,16 @@
         "createDir": true,
         "overwriteFile": "false",
         "encoding": "none",
-        "x": 700,
+        "x": 850,
         "y": 700,
         "wires": [
             []
         ]
     },
     {
-        "id": "24bbbd1602338813",
+        "id": "ccddc1b4f2d8bf37",
         "type": "split",
-        "z": "d1812f6977441004",
+        "z": "06d68578bb544e93",
         "name": "",
         "splt": "\\n",
         "spltType": "str",
@@ -402,20 +339,20 @@
         "stream": false,
         "addname": "",
         "property": "payload",
-        "x": 950,
+        "x": 1100,
         "y": 660,
         "wires": [
             [
-                "f2be50e3a2d5476a",
-                "d194b6e73168b533"
+                "30e5b0b09b3cf938",
+                "495775f273f445f0"
             ]
         ]
     },
     {
-        "id": "f2be50e3a2d5476a",
+        "id": "30e5b0b09b3cf938",
         "type": "debug",
-        "z": "d1812f6977441004",
-        "name": "debug 9",
+        "z": "06d68578bb544e93",
+        "name": "debug 8",
         "active": false,
         "tosidebar": true,
         "console": false,
@@ -423,28 +360,28 @@
         "complete": "false",
         "statusVal": "",
         "statusType": "auto",
-        "x": 1250,
+        "x": 1400,
         "y": 700,
         "wires": []
     },
     {
-        "id": "b2caf3c6f048bb81",
+        "id": "6aadc8f791e00262",
         "type": "ui-control",
-        "z": "d1812f6977441004",
+        "z": "06d68578bb544e93",
         "name": "",
         "ui": "36166cdf54286014",
         "events": "all",
-        "x": 540,
+        "x": 690,
         "y": 840,
         "wires": [
             []
         ]
     },
     {
-        "id": "6350c09a1079521c",
+        "id": "9d68ea6efc03cc12",
         "type": "debug",
-        "z": "d1812f6977441004",
-        "name": "debug 1",
+        "z": "06d68578bb544e93",
+        "name": "debug 9",
         "active": true,
         "tosidebar": true,
         "console": false,
@@ -452,15 +389,15 @@
         "complete": "false",
         "statusVal": "",
         "statusType": "auto",
-        "x": 540,
+        "x": 690,
         "y": 760,
         "wires": []
     },
     {
-        "id": "257aec5becfd7498",
+        "id": "6c80c490a757dfbf",
         "type": "debug",
-        "z": "d1812f6977441004",
-        "name": "debug 7",
+        "z": "06d68578bb544e93",
+        "name": "debug 10",
         "active": true,
         "tosidebar": true,
         "console": false,
@@ -468,39 +405,39 @@
         "complete": "false",
         "statusVal": "",
         "statusType": "auto",
-        "x": 260,
+        "x": 410,
         "y": 800,
         "wires": []
     },
     {
-        "id": "273cc33954fda72f",
+        "id": "ec23d5e4048324dd",
         "type": "function",
-        "z": "d1812f6977441004",
-        "name": "function 6",
-        "func": "const finger = msg.payload;\n\n// store for graph filtering\nflow.set('selectedfinger', finger);\n\n// ---------- UI CONTROL (groups) ----------\nconst groupMap = {\n    POINTER: \"IndexG\",\n    MIDDLE: \"MG\",\n    RING: \"RG\",\n    PINKY: \"PG\",\n    THUMB: \"TG\"\n};\n\nconst allGroups = [\"IndexG\", \"MG\", \"RG\", \"PG\", \"TG\"];\n\nconst showGroup = groupMap[finger];\nconst hideGroups = allGroups.filter(g => g !== showGroup);\n\nconst uiMsg = {\n    payload: {\n        groups: {\n            show: [showGroup],\n            hide: hideGroups\n        }\n    }\n};\n\n// ---------- MQTT COMMAND ----------\nconst COMMANDS = {\n    POINTER: 3,\n    MIDDLE: 10,\n    RING: 11,\n    PINKY: 12,\n    THUMB: 13\n};\n\nconst cmd = COMMANDS[finger];\n\nconst cmdMsg = {\n  topic: \"glove/command\",\n  payload: cmd\n};\n\n// ---------- RETURN BOTH ----------\nreturn [uiMsg, cmdMsg];",
+        "z": "06d68578bb544e93",
+        "name": "function 1",
+        "func": "const finger = msg.payload;\n\n// store for graph filtering\nflow.set('selectedfinger', finger);\n\n// ---------- UI CONTROL (groups) ----------\nconst groupMap = {\n   POINTER: \"IndexG\",\n   MIDDLE: \"MG\",\n   RING: \"RG\",\n   PINKY: \"PG\",\n   THUMB: \"TG\"\n};\n\nconst allGroups = [\"IndexG\", \"MG\", \"RG\", \"PG\", \"TG\"];\n\nconst showGroup = groupMap[finger];\nconst hideGroups = allGroups.filter(g => g !== showGroup);\n\nconst uiMsg = {\n payload: {\n    groups: {\n     show: [showGroup],\n     hide: hideGroups\n  }\n }\n};\n\n// ---------- MQTT COMMAND ----------\nconst COMMANDS = {\n    POINTER: 3,\n    MIDDLE: 10,\n    RING: 11,\n    PINKY: 12,\n    THUMB: 13\n};\n\nconst cmd = COMMANDS[finger];\n\nconst cmdMsg = {\n  topic: \"glove/command\",\n  payload: cmd\n};\n\n// ---------- RETURN BOTH ----------\nreturn [uiMsg, cmdMsg];",
         "outputs": 2,
         "timeout": 0,
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 300,
+        "x": 450,
         "y": 900,
         "wires": [
             [
-                "b2caf3c6f048bb81",
-                "6350c09a1079521c"
+                "6aadc8f791e00262",
+                "9d68ea6efc03cc12"
             ],
             [
-                "77ee31005dbb13a0"
+                "ab9349c6abe883cc"
             ]
         ]
     },
     {
-        "id": "d1406d32eda4c491",
+        "id": "9427e3f025598670",
         "type": "ui-dropdown",
-        "z": "d1812f6977441004",
-        "group": "7edd138365bae11a",
+        "z": "06d68578bb544e93",
+        "group": "4137e7ea168bee44",
         "name": "",
         "label": "Select Option:",
         "tooltip": "",
@@ -544,20 +481,20 @@
         "className": "",
         "typeIsComboBox": true,
         "msgTrigger": "onChange",
-        "x": 90,
+        "x": 240,
         "y": 900,
         "wires": [
             [
-                "273cc33954fda72f",
-                "257aec5becfd7498"
+                "ec23d5e4048324dd",
+                "6c80c490a757dfbf"
             ]
         ]
     },
     {
-        "id": "d194b6e73168b533",
+        "id": "495775f273f445f0",
         "type": "link out",
-        "z": "d1812f6977441004",
-        "name": "link out 1",
+        "z": "06d68578bb544e93",
+        "name": "link out 2",
         "mode": "link",
         "links": [
             "58bfe4a572b96454",
@@ -566,15 +503,14 @@
             "e340faae93e5040e",
             "eb5e7442c91e1f0e"
         ],
-        "x": 1645,
+        "x": 1795,
         "y": 340,
         "wires": []
     },
     {
-        "id": "df96ad5ee5c13f82",
+        "id": "81628402dbedcd8b",
         "type": "mqtt in",
-        "z": "d1812f6977441004",
-        "d": true,
+        "z": "06d68578bb544e93",
         "name": "",
         "topic": "joint/#",
         "qos": "0",
@@ -584,20 +520,20 @@
         "rap": true,
         "rh": 0,
         "inputs": 0,
-        "x": 90,
+        "x": 240,
         "y": 100,
         "wires": [
             [
-                "d1746b8b91501325",
-                "ad6e6691324aba87"
+                "274d32311ed68801",
+                "5a34086b427b69ed"
             ]
         ]
     },
     {
-        "id": "ad6e6691324aba87",
+        "id": "5a34086b427b69ed",
         "type": "debug",
-        "z": "d1812f6977441004",
-        "name": "debug 16",
+        "z": "06d68578bb544e93",
+        "name": "debug 11",
         "active": true,
         "tosidebar": true,
         "console": false,
@@ -605,32 +541,14 @@
         "complete": "false",
         "statusVal": "",
         "statusType": "auto",
-        "x": 280,
+        "x": 430,
         "y": 20,
         "wires": []
     },
     {
-        "id": "2088b580ddad0b05",
-        "type": "debug",
-        "z": "d1812f6977441004",
-        "g": "e0c4a407c0d28291",
-        "name": "debug 8",
-        "active": true,
-        "tosidebar": true,
-        "console": false,
-        "tostatus": false,
-        "complete": "false",
-        "statusVal": "",
-        "statusType": "auto",
-        "x": 580,
-        "y": 220,
-        "wires": []
-    },
-    {
-        "id": "749a61a2d5d54f03",
+        "id": "68c64352923c8f6c",
         "type": "mqtt out",
-        "z": "d1812f6977441004",
-        "g": "e0c4a407c0d28291",
+        "z": "06d68578bb544e93",
         "name": "",
         "topic": "",
         "qos": "",
@@ -641,53 +559,14 @@
         "correl": "",
         "expiry": "",
         "broker": "4b36ad713a951d74",
-        "x": 560,
-        "y": 300,
-        "wires": []
-    },
-    {
-        "id": "6fcea763d765ff6c",
-        "type": "mqtt out",
-        "z": "d1812f6977441004",
-        "name": "",
-        "topic": "",
-        "qos": "",
-        "retain": "",
-        "respTopic": "",
-        "contentType": "",
-        "userProps": "",
-        "correl": "",
-        "expiry": "",
-        "broker": "4b36ad713a951d74",
-        "x": 330,
+        "x": 480,
         "y": 380,
         "wires": []
     },
     {
-        "id": "30d88dc2f8017ac7",
+        "id": "0e36256fe6e93cd6",
         "type": "function",
-        "z": "d1812f6977441004",
-        "g": "e0c4a407c0d28291",
-        "name": "STart button MQTT",
-        "func": "const finger = flow.get('selectedfinger') || 'POINTER';\nnode.send({topic: msg.topic, payload: []});\nnode.send({topic:\"Trend\", payload: []});// clear graph\n\nflow.set('recording_'+ finger,  true); //Init\nflow.set('samples_'+finger,[]);\nflow.set('Tstart_global'+finger, Date.now());\n\n\nreturn msg;",
-        "outputs": 1,
-        "timeout": 0,
-        "noerr": 0,
-        "initialize": "",
-        "finalize": "",
-        "libs": [],
-        "x": 380,
-        "y": 280,
-        "wires": [
-            [
-                "749a61a2d5d54f03"
-            ]
-        ]
-    },
-    {
-        "id": "06ed04643d3877e1",
-        "type": "function",
-        "z": "d1812f6977441004",
+        "z": "06d68578bb544e93",
         "name": "Stop button Function MQTT",
         "func": "msg.topic =\"system/command\";\nmsg.payload = 6;\n\nreturn msg;",
         "outputs": 1,
@@ -696,19 +575,19 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 180,
+        "x": 330,
         "y": 460,
         "wires": [
             [
-                "6fcea763d765ff6c"
+                "68c64352923c8f6c"
             ]
         ]
     },
     {
-        "id": "f58c8467f22ffe7b",
+        "id": "79f6098cbbf94149",
         "type": "ui-button",
-        "z": "d1812f6977441004",
-        "group": "81b02f13e24b12b9",
+        "z": "06d68578bb544e93",
+        "group": "848d0abaf8b84005",
         "name": "CALIBRATION",
         "label": "Calibration",
         "order": 1,
@@ -735,18 +614,18 @@
         "enablePointerup": false,
         "pointerupPayload": "",
         "pointerupPayloadType": "str",
-        "x": 120,
+        "x": 270,
         "y": 1000,
         "wires": [
             [
-                "0e36d6441fb6651c"
+                "10461500951695d7"
             ]
         ]
     },
     {
-        "id": "0e36d6441fb6651c",
+        "id": "10461500951695d7",
         "type": "function",
-        "z": "d1812f6977441004",
+        "z": "06d68578bb544e93",
         "name": "Calibration code send -> ESP",
         "func": "flow.set('is calibrated', false);\n\nconst uimsg ={\n    payload: \"CALIBRATING....\"\n};\n\nconst sendmsg ={\n    topic: \"system/calibration_status\",\n    payload:7\n\n};\n\nreturn [uimsg, sendmsg];",
         "outputs": 2,
@@ -755,21 +634,21 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 430,
+        "x": 580,
         "y": 1000,
         "wires": [
             [
-                "e0576da88586af13"
+                "c652d1d7a4bbbdc3"
             ],
             [
-                "349a48601729c4b1"
+                "a547f82ba4f00be8"
             ]
         ]
     },
     {
-        "id": "e0576da88586af13",
+        "id": "c652d1d7a4bbbdc3",
         "type": "mqtt out",
-        "z": "d1812f6977441004",
+        "z": "06d68578bb544e93",
         "name": "",
         "topic": "",
         "qos": "",
@@ -780,14 +659,14 @@
         "correl": "",
         "expiry": "",
         "broker": "4b36ad713a951d74",
-        "x": 650,
+        "x": 800,
         "y": 1000,
         "wires": []
     },
     {
-        "id": "2006c7e01b7ed728",
+        "id": "4543a0f4bc0f9ab1",
         "type": "mqtt in",
-        "z": "d1812f6977441004",
+        "z": "06d68578bb544e93",
         "name": "",
         "topic": "system/calibration_status",
         "qos": "2",
@@ -797,18 +676,18 @@
         "rap": true,
         "rh": 0,
         "inputs": 0,
-        "x": 150,
+        "x": 300,
         "y": 1080,
         "wires": [
             [
-                "46f7383e70d645b7"
+                "02578128653037bc"
             ]
         ]
     },
     {
-        "id": "46f7383e70d645b7",
+        "id": "02578128653037bc",
         "type": "function",
-        "z": "d1812f6977441004",
+        "z": "06d68578bb544e93",
         "name": "Recieve Cal.  ESP-> pi",
         "func": " const status = Number(msg.payload);\n\n// default\nlet progress = 0;\nlet text = \"Unknown\";\n\nif (status === 7) {\n    progress = 10;\n    text = \"Starting calibration...\";\n}\n\nif (status === 8) {\n    progress = 50;\n    text = \"Calibrating...\";\n}\n\nif (status === 9) {\n    progress = 100;\n    text = \"Calibration Complete ✅\";\n    flow.set(\"isCalibrated\", true);\n}\n\n// send to gauge\nconst gaugeMsg = {\n    payload: progress\n};\n\n// send to text label\nconst textMsg = {\n    payload: text\n};\n\nreturn [gaugeMsg, textMsg];\n",
         "outputs": 2,
@@ -817,22 +696,22 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 360,
+        "x": 510,
         "y": 1160,
         "wires": [
             [
-                "349a48601729c4b1"
+                "a547f82ba4f00be8"
             ],
             [
-                "7441d574a5917b07"
+                "5f1ca35288ae56db"
             ]
         ]
     },
     {
-        "id": "349a48601729c4b1",
+        "id": "a547f82ba4f00be8",
         "type": "ui-text",
-        "z": "d1812f6977441004",
-        "group": "7edd138365bae11a",
+        "z": "06d68578bb544e93",
+        "group": "4137e7ea168bee44",
         "order": 3,
         "width": 0,
         "height": 0,
@@ -848,16 +727,16 @@
         "className": "",
         "value": "payloads",
         "valueType": "msg",
-        "x": 590,
+        "x": 740,
         "y": 1100,
         "wires": []
     },
     {
-        "id": "7441d574a5917b07",
+        "id": "5f1ca35288ae56db",
         "type": "ui-gauge",
-        "z": "d1812f6977441004",
+        "z": "06d68578bb544e93",
         "name": "status",
-        "group": "7edd138365bae11a",
+        "group": "4137e7ea168bee44",
         "order": 2,
         "value": "payload",
         "valueType": "msg",
@@ -894,16 +773,16 @@
         "styleRounded": true,
         "styleGlow": false,
         "className": "",
-        "x": 590,
+        "x": 740,
         "y": 1160,
         "wires": [
             []
         ]
     },
     {
-        "id": "77ee31005dbb13a0",
+        "id": "ab9349c6abe883cc",
         "type": "mqtt out",
-        "z": "d1812f6977441004",
+        "z": "06d68578bb544e93",
         "name": "",
         "topic": "",
         "qos": "",
@@ -914,15 +793,14 @@
         "correl": "",
         "expiry": "",
         "broker": "4b36ad713a951d74",
-        "x": 510,
+        "x": 660,
         "y": 900,
         "wires": []
     },
     {
-        "id": "dd21ddc134d83c54",
+        "id": "0752909af2d134e1",
         "type": "mqtt in",
-        "z": "d1812f6977441004",
-        "d": true,
+        "z": "06d68578bb544e93",
         "name": "",
         "topic": "abduction/#",
         "qos": "0",
@@ -932,52 +810,143 @@
         "rap": true,
         "rh": 0,
         "inputs": 0,
-        "x": 110,
+        "x": 260,
         "y": 160,
         "wires": [
             [
-                "d1746b8b91501325"
+                "274d32311ed68801"
             ]
         ]
     },
     {
-        "id": "8576fe4ffb9ab214",
-        "type": "inject",
-        "z": "d1812f6977441004",
+        "id": "c78a2cce44b082ef",
+        "type": "debug",
+        "z": "06d68578bb544e93",
+        "g": "e50caa73a6bbb57a",
+        "name": "debug 12",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 730,
+        "y": 220,
+        "wires": []
+    },
+    {
+        "id": "4173f140e001c24f",
+        "type": "mqtt out",
+        "z": "06d68578bb544e93",
+        "g": "e50caa73a6bbb57a",
         "name": "",
-        "props": [
-            {
-                "p": "payload"
-            },
-            {
-                "p": "topic",
-                "vt": "str"
-            }
-        ],
-        "repeat": "1",
-        "crontab": "",
-        "once": true,
-        "onceDelay": 0.1,
-        "topic": "PIP",
-        "payload": "1",
-        "payloadType": "num",
-        "x": 70,
-        "y": 60,
+        "topic": "",
+        "qos": "",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "4b36ad713a951d74",
+        "x": 710,
+        "y": 300,
+        "wires": []
+    },
+    {
+        "id": "8a9c2dbb739d3368",
+        "type": "function",
+        "z": "06d68578bb544e93",
+        "g": "e50caa73a6bbb57a",
+        "name": "STart button func",
+        "func": "const finger = flow.get('selectedfinger') || 'POINTER';\nnode.send({topic: msg.topic, payload: []});\nnode.send({topic:\"Trend\", payload: []});// clear graph\n\nflow.set('recording_'+ finger,  true); //Init\nflow.set('samples_'+finger,[]);\nflow.set('Tstart_global'+finger, Date.now());\n\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 530,
+        "y": 240,
         "wires": [
             [
-                "d1746b8b91501325"
+                "495775f273f445f0",
+                "c78a2cce44b082ef"
             ]
         ]
     },
     {
-        "id": "81b02f13e24b12b9",
+        "id": "7e97b404c254d868",
+        "type": "ui-button",
+        "z": "06d68578bb544e93",
+        "g": "e50caa73a6bbb57a",
+        "group": "81b02f13e24b12b9",
+        "name": "Start_Index",
+        "label": "Start session ",
+        "order": 2,
+        "width": "0",
+        "height": "0",
+        "emulateClick": false,
+        "tooltip": "",
+        "color": "",
+        "bgcolor": "",
+        "className": "",
+        "icon": "",
+        "iconPosition": "left",
+        "payload": "",
+        "payloadType": "str",
+        "topic": "topic",
+        "topicType": "msg",
+        "buttonColor": "",
+        "textColor": "",
+        "iconColor": "",
+        "enableClick": true,
+        "enablePointerdown": false,
+        "pointerdownPayload": "",
+        "pointerdownPayloadType": "str",
+        "enablePointerup": false,
+        "pointerupPayload": "",
+        "pointerupPayloadType": "str",
+        "x": 260,
+        "y": 240,
+        "wires": [
+            [
+                "8a9c2dbb739d3368",
+                "17a09d723f80ec16"
+            ]
+        ]
+    },
+    {
+        "id": "17a09d723f80ec16",
+        "type": "function",
+        "z": "06d68578bb544e93",
+        "g": "e50caa73a6bbb57a",
+        "name": "STart button MQTT",
+        "func": "const finger = flow.get('selectedfinger') || 'POINTER';\nnode.send({topic: msg.topic, payload: []});\nnode.send({topic:\"Trend\", payload: []});// clear graph\n\nflow.set('recording_'+ finger,  true); //Init\nflow.set('samples_'+finger,[]);\nflow.set('Tstart_global'+finger, Date.now());\n\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 530,
+        "y": 280,
+        "wires": [
+            [
+                "4173f140e001c24f"
+            ]
+        ]
+    },
+    {
+        "id": "848d0abaf8b84005",
         "type": "ui-group",
-        "name": "Index Controls",
-        "page": "38e753d080b99624",
-        "width": "6",
+        "name": "Grip Controls ",
+        "page": "ef0138b24414ffa4",
+        "width": 6,
         "height": 1,
-        "order": 6,
-        "showTitle": true,
+        "order": 1,
+        "showTitle": false,
         "className": "",
         "visible": "true",
         "disabled": "false",
@@ -1004,14 +973,14 @@
         "allowInstall": false
     },
     {
-        "id": "7edd138365bae11a",
+        "id": "4137e7ea168bee44",
         "type": "ui-group",
-        "name": "Dropdown Group",
-        "page": "38e753d080b99624",
-        "width": "6",
+        "name": "dropdown group",
+        "page": "ef0138b24414ffa4",
+        "width": 6,
         "height": 1,
-        "order": 7,
-        "showTitle": false,
+        "order": 2,
+        "showTitle": true,
         "className": "",
         "visible": "true",
         "disabled": "false",
@@ -1047,6 +1016,56 @@
         "willMsg": {},
         "userProps": "",
         "sessionExpiry": ""
+    },
+    {
+        "id": "81b02f13e24b12b9",
+        "type": "ui-group",
+        "name": "ROM Controls",
+        "page": "38e753d080b99624",
+        "width": "6",
+        "height": 1,
+        "order": 6,
+        "showTitle": true,
+        "className": "",
+        "visible": "true",
+        "disabled": "false",
+        "groupType": "default"
+    },
+    {
+        "id": "ef0138b24414ffa4",
+        "type": "ui-page",
+        "name": "Strength Tracking",
+        "ui": "36166cdf54286014",
+        "path": "/page2",
+        "icon": "home",
+        "layout": "grid",
+        "theme": "8f91d3c43d41b585",
+        "breakpoints": [
+            {
+                "name": "Default",
+                "px": "0",
+                "cols": "3"
+            },
+            {
+                "name": "Tablet",
+                "px": "576",
+                "cols": "6"
+            },
+            {
+                "name": "Small Desktop",
+                "px": "768",
+                "cols": "9"
+            },
+            {
+                "name": "Desktop",
+                "px": "1024",
+                "cols": "12"
+            }
+        ],
+        "order": 1,
+        "className": "",
+        "visible": "true",
+        "disabled": "false"
     },
     {
         "id": "38e753d080b99624",
@@ -1104,7 +1123,7 @@
         }
     },
     {
-        "id": "dce9679b46ef8924",
+        "id": "8644d6428a9ce419",
         "type": "global-config",
         "env": [],
         "modules": {
