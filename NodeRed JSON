@@ -1,0 +1,1114 @@
+[
+    {
+        "id": "d1812f6977441004",
+        "type": "tab",
+        "label": "main flex",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "e0c4a407c0d28291",
+        "type": "group",
+        "z": "d1812f6977441004",
+        "style": {
+            "stroke": "#999999",
+            "stroke-opacity": "1",
+            "fill": "none",
+            "fill-opacity": "1",
+            "label": true,
+            "label-position": "nw",
+            "color": "#a4a4a4"
+        },
+        "nodes": [
+            "2088b580ddad0b05",
+            "749a61a2d5d54f03",
+            "1642a8455289f7c5",
+            "0be6d5ef60814b9d",
+            "30d88dc2f8017ac7"
+        ],
+        "x": 14,
+        "y": 179,
+        "w": 672,
+        "h": 162
+    },
+    {
+        "id": "a2268e1066ec83fc",
+        "type": "debug",
+        "z": "d1812f6977441004",
+        "name": "debug 12",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 950,
+        "y": 800,
+        "wires": []
+    },
+    {
+        "id": "b0d955cd0bc78f79",
+        "type": "debug",
+        "z": "d1812f6977441004",
+        "name": "debug 5",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 540,
+        "y": 600,
+        "wires": []
+    },
+    {
+        "id": "6a38bee4d152b1d5",
+        "type": "function",
+        "z": "d1812f6977441004",
+        "name": "Linear Regression",
+        "func": "const finger = flow.get('selectedfinger') || 'POINTER'\nconst points = msg.payload || [];\nnode.warn(\"Regression recieved\" + JSON.stringify(msg.payload));\n\n\n//bail case for lack of data\nif (points.length < 2) {\n    node.warn(\"Not enough data for tracking\");\n    msg.payload = 'Not Enough data points';\n    return msg;\n}\nnode.warn(\"point length:\" + points.length);\nconst n = points.length;\n//sums for regression\nlet sumx = 0, sumy = 0, sumxy = 0, sumxx = 0;\nfor (let p of points) {\n    const x = p.x;\n    const y = p.y;\n    sumx += x;\n    sumy += y;\n    sumxy += x * y;\n    sumxx += x * x;\n\n}\n//denominator \nconst den = (n * sumxx - sumx * sumx);\nif (den === 0) {\n    msg.payload = \"failed regression\";\n    return msg;\n\n} //slope\nconst m = (n * sumxy - sumx * sumy) / den;\n//Intercept\nconst b = (sumy - m * sumx) / n;\n//R^2\nlet totSS = 0, resSS = 0;\nconst Ymean = sumy / n;\n\nfor (let p of points) {\n    const y = p.y;\n    const ydict = m * p.x + b;\n    totSS += (y - Ymean) * (y - Ymean);\n    resSS += (y - ydict) * (y - ydict);\n\n}\nlet r2 = 0;\nr2 = 1 - (resSS / totSS);\n\nlet verdict = \"No clear trend\";\n\nconst slopethresh = 0.05;\nconst r2thres = 0.4;\n\nif (Math.abs(m) < slopethresh || r2 < r2thres) {\n    verdict = \"No clear trend\";\n\n}\nelse if (m > 0) {\n    verdict = \" Good Progress\"\n\n}\nelse {\n    verdict = \"Decreasing Progress\";\n\n}\n\nconst sort = [...points].sort((a, b) => a.x - b.x);\n\nconst xmin = sort[0].x;\nconst xmax= sort[sort.length-1].x;\n\nconst sTime = flow.get('Tstart_global'+finger);\nconst linepoints = [{x: xmin, y: m*xmin + b}, {x:xmax, y:m*xmax+b}];\n\n\nconst msginfo = {\n    payload: {\n        slope: m.toFixed(4),\n        intercept: b.toFixed(4),\n        r2: r2.toFixed(4),\n        count: n,\n        verdict: verdict\n    }\n};\n\nconst msgline1 ={\n    topic: \"Trend\", \n    payload: sort.map(p =>  \n    {return{\n        x:p.x, \n        y: m*p.x + b}; \n        })      \n\n    };\n\n\nreturn [msginfo, msgline1];\n",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 710,
+        "y": 540,
+        "wires": [
+            [
+                "21c3ace3e8dc5891"
+            ],
+            [
+                "d7bbe54f8a41fd17",
+                "a2268e1066ec83fc",
+                "24bbbd1602338813"
+            ]
+        ]
+    },
+    {
+        "id": "1642a8455289f7c5",
+        "type": "function",
+        "z": "d1812f6977441004",
+        "g": "e0c4a407c0d28291",
+        "name": "STart button func",
+        "func": "const finger = flow.get('selectedfinger') || 'POINTER';\nnode.send({topic: msg.topic, payload: []});\nnode.send({topic:\"Trend\", payload: []});// clear graph\n\nflow.set('recording_'+ finger,  true); //Init\nflow.set('samples_'+finger,[]);\nflow.set('Tstart_global'+finger, Date.now());\n\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 380,
+        "y": 240,
+        "wires": [
+            [
+                "d194b6e73168b533",
+                "2088b580ddad0b05"
+            ]
+        ]
+    },
+    {
+        "id": "0be6d5ef60814b9d",
+        "type": "ui-button",
+        "z": "d1812f6977441004",
+        "g": "e0c4a407c0d28291",
+        "group": "81b02f13e24b12b9",
+        "name": "Start_Index",
+        "label": "Start session ",
+        "order": 2,
+        "width": "0",
+        "height": "0",
+        "emulateClick": false,
+        "tooltip": "",
+        "color": "",
+        "bgcolor": "",
+        "className": "",
+        "icon": "",
+        "iconPosition": "left",
+        "payload": "",
+        "payloadType": "str",
+        "topic": "topic",
+        "topicType": "msg",
+        "buttonColor": "",
+        "textColor": "",
+        "iconColor": "",
+        "enableClick": true,
+        "enablePointerdown": false,
+        "pointerdownPayload": "",
+        "pointerdownPayloadType": "str",
+        "enablePointerup": false,
+        "pointerupPayload": "",
+        "pointerupPayloadType": "str",
+        "x": 110,
+        "y": 240,
+        "wires": [
+            [
+                "1642a8455289f7c5",
+                "30d88dc2f8017ac7"
+            ]
+        ]
+    },
+    {
+        "id": "4478f76f5c85e519",
+        "type": "function",
+        "z": "d1812f6977441004",
+        "name": "Stop button Function",
+        "func": "const finger = flow.get('selectedfinger') || 'Index';\n\nmsg.topic =finger\nflow.set('recording_'+finger, false);\nconst samples = flow.get('samples_'+finger);\n\n\nlet out1 = null;\nlet out2 = {topic: finger, payload: samples};\n\n\n\nreturn [out1, out2];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 290,
+        "y": 520,
+        "wires": [
+            [
+                "31afc75e1caf9170",
+                "d194b6e73168b533"
+            ],
+            [
+                "6a38bee4d152b1d5",
+                "b0d955cd0bc78f79"
+            ]
+        ]
+    },
+    {
+        "id": "69b2b0bda7ab8f6a",
+        "type": "ui-button",
+        "z": "d1812f6977441004",
+        "group": "81b02f13e24b12b9",
+        "name": "Stop_Index",
+        "label": "Stop Session",
+        "order": 3,
+        "width": "0",
+        "height": "0",
+        "emulateClick": false,
+        "tooltip": "",
+        "color": "",
+        "bgcolor": "",
+        "className": "",
+        "icon": "",
+        "iconPosition": "left",
+        "payload": "",
+        "payloadType": "str",
+        "topic": "topic",
+        "topicType": "msg",
+        "buttonColor": "'#FF0000'",
+        "textColor": "",
+        "iconColor": "",
+        "enableClick": true,
+        "enablePointerdown": false,
+        "pointerdownPayload": "",
+        "pointerdownPayloadType": "str",
+        "enablePointerup": false,
+        "pointerupPayload": "",
+        "pointerupPayloadType": "str",
+        "x": 80,
+        "y": 520,
+        "wires": [
+            [
+                "4478f76f5c85e519",
+                "06ed04643d3877e1"
+            ]
+        ]
+    },
+    {
+        "id": "31afc75e1caf9170",
+        "type": "debug",
+        "z": "d1812f6977441004",
+        "name": "debug 11",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 590,
+        "y": 420,
+        "wires": []
+    },
+    {
+        "id": "21c3ace3e8dc5891",
+        "type": "ui-template",
+        "z": "d1812f6977441004",
+        "d": true,
+        "group": "",
+        "page": "",
+        "ui": "36166cdf54286014",
+        "name": "",
+        "order": 2,
+        "width": 0,
+        "height": 0,
+        "head": "",
+        "format": "<template>\n  <div style=\"position: fixed; top:64px; right:550px; padding:8px; background:rgba(0,0,0,.45); color:#0ff; border-radius:6px; width:200px;\">\n    <h2>Progress</h2>\n\n    <p> Slope:{{msg.payload.slope }} <p>\n    <p> Intercept:{{msg.payload.intercept }}<p>\n    <p> R^2:{{msg.payload.r2}}<p>\n    <p> Verdict:{{msg.payload.verdict }}<p>\n  </div>\n</template>\n\n",
+        "storeOutMessages": true,
+        "passthru": true,
+        "resendOnRefresh": true,
+        "templateScope": "widget:ui",
+        "className": "",
+        "x": 1010,
+        "y": 480,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "d1746b8b91501325",
+        "type": "function",
+        "z": "d1812f6977441004",
+        "name": "Data Storage and transfer ",
+        "func": "// const parts = msg.topic.split(\"/\");\n// const type = parts[0];        // \"joint\" or \"imu\"\n// const data = parts[1];\n\n// let finger, label;\n\n// // determine source\n// if (type === \"joint\") {\n//     [finger, label] = data.split(\"_\");   // POINTER, MCP\n// }\n// else if (type === \"abduction\") {\n//     finger = data;\n//     label = \"ABD\";   // name for IMU line\n// }\n// else {\n//     return null;\n// }\n\n// // filter by selected finger\n// const selected = flow.get('selectedfinger') || \"POINTER\";\n// if (finger !== selected) return null;\n\n// // convert value\n// const val = Number(msg.payload);\n// if (isNaN(val)) return null;\n\n// // time handling (linear seconds)\n// let timer = flow.get('Tstart_global');\n// if (!timer) {\n//     timer = Date.now();\n//     flow.set('Tstart_global', timer);\n// }\n\n// const t = (Date.now() - timer) / 1000;\n\n// // send to chart\n// msg.topic = label;   // MCP, PIP, DIP, ABD\n// msg.payload = {\n//     x: t,\n//     y: val\n// };\n\n// return msg\n\nmsg.topic=\"PIP\";\nmsg.payload= {x: Date.now(),\ny: Math.random()*100};\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 330,
+        "y": 120,
+        "wires": [
+            [
+                "d194b6e73168b533",
+                "7dcaf942abcf9cf4"
+            ]
+        ]
+    },
+    {
+        "id": "7dcaf942abcf9cf4",
+        "type": "debug",
+        "z": "d1812f6977441004",
+        "name": "debug 10",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "topic",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1400,
+        "y": 500,
+        "wires": []
+    },
+    {
+        "id": "d7bbe54f8a41fd17",
+        "type": "debug",
+        "z": "d1812f6977441004",
+        "name": "debug 2",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1780,
+        "y": 560,
+        "wires": []
+    },
+    {
+        "id": "f7fe840d94250ddb",
+        "type": "function",
+        "z": "d1812f6977441004",
+        "name": "Save Button Function",
+        "func": "const finger = flow.get('selectedfinger') || 'Index';\n\nconst samples = flow.get('samples_'+finger) || [];\nconst sampleCopy = [...samples];\n\nif (sampleCopy.length === 0){\n    node.warn('No data to store');\n    return null;\n\n\n}\n\nconst headers = Object.keys(samples[0]).join(',');\nconst rows = samples.map(row => Object.values(row).join(','));\nconst csv = [headers, ...rows].join('\\n');\n\nconst Tstamp = new Date().toDateString().replace(/[:.]/g, '-');\nconst filename = `session_${Tstamp}.csv`;\n\nmsg.payload = csv;\nmsg.filename = `/home/vboxuser/Documents/${filename}`;\n\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 440,
+        "y": 700,
+        "wires": [
+            [
+                "3cac732db55f2ed9"
+            ]
+        ]
+    },
+    {
+        "id": "3664cef4252bd3a1",
+        "type": "ui-button",
+        "z": "d1812f6977441004",
+        "group": "81b02f13e24b12b9",
+        "name": "SaveSession_Index",
+        "label": "Save Session",
+        "order": 4,
+        "width": 0,
+        "height": 0,
+        "emulateClick": false,
+        "tooltip": "",
+        "color": "",
+        "bgcolor": "",
+        "className": "",
+        "icon": "",
+        "iconPosition": "left",
+        "payload": "",
+        "payloadType": "str",
+        "topic": "topic",
+        "topicType": "msg",
+        "buttonColor": "",
+        "textColor": "",
+        "iconColor": "",
+        "enableClick": true,
+        "enablePointerdown": false,
+        "pointerdownPayload": "",
+        "pointerdownPayloadType": "str",
+        "enablePointerup": false,
+        "pointerupPayload": "",
+        "pointerupPayloadType": "str",
+        "x": 120,
+        "y": 700,
+        "wires": [
+            [
+                "f7fe840d94250ddb"
+            ]
+        ]
+    },
+    {
+        "id": "3cac732db55f2ed9",
+        "type": "file",
+        "z": "d1812f6977441004",
+        "name": "write file",
+        "filename": "/home/vboxuser/Documents/csv",
+        "filenameType": "str",
+        "appendNewline": true,
+        "createDir": true,
+        "overwriteFile": "false",
+        "encoding": "none",
+        "x": 700,
+        "y": 700,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "24bbbd1602338813",
+        "type": "split",
+        "z": "d1812f6977441004",
+        "name": "",
+        "splt": "\\n",
+        "spltType": "str",
+        "arraySplt": 1,
+        "arraySpltType": "len",
+        "stream": false,
+        "addname": "",
+        "property": "payload",
+        "x": 950,
+        "y": 660,
+        "wires": [
+            [
+                "f2be50e3a2d5476a",
+                "d194b6e73168b533"
+            ]
+        ]
+    },
+    {
+        "id": "f2be50e3a2d5476a",
+        "type": "debug",
+        "z": "d1812f6977441004",
+        "name": "debug 9",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1250,
+        "y": 700,
+        "wires": []
+    },
+    {
+        "id": "b2caf3c6f048bb81",
+        "type": "ui-control",
+        "z": "d1812f6977441004",
+        "name": "",
+        "ui": "36166cdf54286014",
+        "events": "all",
+        "x": 540,
+        "y": 840,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "6350c09a1079521c",
+        "type": "debug",
+        "z": "d1812f6977441004",
+        "name": "debug 1",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 540,
+        "y": 760,
+        "wires": []
+    },
+    {
+        "id": "257aec5becfd7498",
+        "type": "debug",
+        "z": "d1812f6977441004",
+        "name": "debug 7",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 260,
+        "y": 800,
+        "wires": []
+    },
+    {
+        "id": "273cc33954fda72f",
+        "type": "function",
+        "z": "d1812f6977441004",
+        "name": "function 6",
+        "func": "const finger = msg.payload;\n\n// store for graph filtering\nflow.set('selectedfinger', finger);\n\n// ---------- UI CONTROL (groups) ----------\nconst groupMap = {\n    POINTER: \"IndexG\",\n    MIDDLE: \"MG\",\n    RING: \"RG\",\n    PINKY: \"PG\",\n    THUMB: \"TG\"\n};\n\nconst allGroups = [\"IndexG\", \"MG\", \"RG\", \"PG\", \"TG\"];\n\nconst showGroup = groupMap[finger];\nconst hideGroups = allGroups.filter(g => g !== showGroup);\n\nconst uiMsg = {\n    payload: {\n        groups: {\n            show: [showGroup],\n            hide: hideGroups\n        }\n    }\n};\n\n// ---------- MQTT COMMAND ----------\nconst COMMANDS = {\n    POINTER: 3,\n    MIDDLE: 10,\n    RING: 11,\n    PINKY: 12,\n    THUMB: 13\n};\n\nconst cmd = COMMANDS[finger];\n\nconst cmdMsg = {\n  topic: \"glove/command\",\n  payload: cmd\n};\n\n// ---------- RETURN BOTH ----------\nreturn [uiMsg, cmdMsg];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 300,
+        "y": 900,
+        "wires": [
+            [
+                "b2caf3c6f048bb81",
+                "6350c09a1079521c"
+            ],
+            [
+                "77ee31005dbb13a0"
+            ]
+        ]
+    },
+    {
+        "id": "d1406d32eda4c491",
+        "type": "ui-dropdown",
+        "z": "d1812f6977441004",
+        "group": "7edd138365bae11a",
+        "name": "",
+        "label": "Select Option:",
+        "tooltip": "",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "passthru": false,
+        "multiple": false,
+        "chips": false,
+        "clearable": false,
+        "options": [
+            {
+                "label": "Index",
+                "value": "POINTER",
+                "type": "str"
+            },
+            {
+                "label": "Middle",
+                "value": "MIDDLE",
+                "type": "str"
+            },
+            {
+                "label": "Ring",
+                "value": "RING",
+                "type": "str"
+            },
+            {
+                "label": "Pinky",
+                "value": "PINKY",
+                "type": "str"
+            },
+            {
+                "label": "Thumb",
+                "value": "THUMB",
+                "type": "str"
+            }
+        ],
+        "payload": "",
+        "topic": "topic",
+        "topicType": "msg",
+        "className": "",
+        "typeIsComboBox": true,
+        "msgTrigger": "onChange",
+        "x": 90,
+        "y": 900,
+        "wires": [
+            [
+                "273cc33954fda72f",
+                "257aec5becfd7498"
+            ]
+        ]
+    },
+    {
+        "id": "d194b6e73168b533",
+        "type": "link out",
+        "z": "d1812f6977441004",
+        "name": "link out 1",
+        "mode": "link",
+        "links": [
+            "58bfe4a572b96454",
+            "837339fb526579d0",
+            "98b1ee5cd9e0673e",
+            "e340faae93e5040e",
+            "eb5e7442c91e1f0e"
+        ],
+        "x": 1645,
+        "y": 340,
+        "wires": []
+    },
+    {
+        "id": "df96ad5ee5c13f82",
+        "type": "mqtt in",
+        "z": "d1812f6977441004",
+        "d": true,
+        "name": "",
+        "topic": "joint/#",
+        "qos": "0",
+        "datatype": "auto-detect",
+        "broker": "4b36ad713a951d74",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 90,
+        "y": 100,
+        "wires": [
+            [
+                "d1746b8b91501325",
+                "ad6e6691324aba87"
+            ]
+        ]
+    },
+    {
+        "id": "ad6e6691324aba87",
+        "type": "debug",
+        "z": "d1812f6977441004",
+        "name": "debug 16",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 280,
+        "y": 20,
+        "wires": []
+    },
+    {
+        "id": "2088b580ddad0b05",
+        "type": "debug",
+        "z": "d1812f6977441004",
+        "g": "e0c4a407c0d28291",
+        "name": "debug 8",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 580,
+        "y": 220,
+        "wires": []
+    },
+    {
+        "id": "749a61a2d5d54f03",
+        "type": "mqtt out",
+        "z": "d1812f6977441004",
+        "g": "e0c4a407c0d28291",
+        "name": "",
+        "topic": "",
+        "qos": "",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "4b36ad713a951d74",
+        "x": 560,
+        "y": 300,
+        "wires": []
+    },
+    {
+        "id": "6fcea763d765ff6c",
+        "type": "mqtt out",
+        "z": "d1812f6977441004",
+        "name": "",
+        "topic": "",
+        "qos": "",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "4b36ad713a951d74",
+        "x": 330,
+        "y": 380,
+        "wires": []
+    },
+    {
+        "id": "30d88dc2f8017ac7",
+        "type": "function",
+        "z": "d1812f6977441004",
+        "g": "e0c4a407c0d28291",
+        "name": "STart button MQTT",
+        "func": "const finger = flow.get('selectedfinger') || 'POINTER';\nnode.send({topic: msg.topic, payload: []});\nnode.send({topic:\"Trend\", payload: []});// clear graph\n\nflow.set('recording_'+ finger,  true); //Init\nflow.set('samples_'+finger,[]);\nflow.set('Tstart_global'+finger, Date.now());\n\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 380,
+        "y": 280,
+        "wires": [
+            [
+                "749a61a2d5d54f03"
+            ]
+        ]
+    },
+    {
+        "id": "06ed04643d3877e1",
+        "type": "function",
+        "z": "d1812f6977441004",
+        "name": "Stop button Function MQTT",
+        "func": "msg.topic =\"system/command\";\nmsg.payload = 6;\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 180,
+        "y": 460,
+        "wires": [
+            [
+                "6fcea763d765ff6c"
+            ]
+        ]
+    },
+    {
+        "id": "f58c8467f22ffe7b",
+        "type": "ui-button",
+        "z": "d1812f6977441004",
+        "group": "81b02f13e24b12b9",
+        "name": "CALIBRATION",
+        "label": "Calibration",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "emulateClick": false,
+        "tooltip": "",
+        "color": "",
+        "bgcolor": "",
+        "className": "",
+        "icon": "",
+        "iconPosition": "left",
+        "payload": "",
+        "payloadType": "str",
+        "topic": "topic",
+        "topicType": "msg",
+        "buttonColor": "",
+        "textColor": "",
+        "iconColor": "",
+        "enableClick": true,
+        "enablePointerdown": false,
+        "pointerdownPayload": "",
+        "pointerdownPayloadType": "str",
+        "enablePointerup": false,
+        "pointerupPayload": "",
+        "pointerupPayloadType": "str",
+        "x": 120,
+        "y": 1000,
+        "wires": [
+            [
+                "0e36d6441fb6651c"
+            ]
+        ]
+    },
+    {
+        "id": "0e36d6441fb6651c",
+        "type": "function",
+        "z": "d1812f6977441004",
+        "name": "Calibration code send -> ESP",
+        "func": "flow.set('is calibrated', false);\n\nconst uimsg ={\n    payload: \"CALIBRATING....\"\n};\n\nconst sendmsg ={\n    topic: \"system/calibration_status\",\n    payload:7\n\n};\n\nreturn [uimsg, sendmsg];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 430,
+        "y": 1000,
+        "wires": [
+            [
+                "e0576da88586af13"
+            ],
+            [
+                "349a48601729c4b1"
+            ]
+        ]
+    },
+    {
+        "id": "e0576da88586af13",
+        "type": "mqtt out",
+        "z": "d1812f6977441004",
+        "name": "",
+        "topic": "",
+        "qos": "",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "4b36ad713a951d74",
+        "x": 650,
+        "y": 1000,
+        "wires": []
+    },
+    {
+        "id": "2006c7e01b7ed728",
+        "type": "mqtt in",
+        "z": "d1812f6977441004",
+        "name": "",
+        "topic": "system/calibration_status",
+        "qos": "2",
+        "datatype": "auto-detect",
+        "broker": "4b36ad713a951d74",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 150,
+        "y": 1080,
+        "wires": [
+            [
+                "46f7383e70d645b7"
+            ]
+        ]
+    },
+    {
+        "id": "46f7383e70d645b7",
+        "type": "function",
+        "z": "d1812f6977441004",
+        "name": "Recieve Cal.  ESP-> pi",
+        "func": " const status = Number(msg.payload);\n\n// default\nlet progress = 0;\nlet text = \"Unknown\";\n\nif (status === 7) {\n    progress = 10;\n    text = \"Starting calibration...\";\n}\n\nif (status === 8) {\n    progress = 50;\n    text = \"Calibrating...\";\n}\n\nif (status === 9) {\n    progress = 100;\n    text = \"Calibration Complete ✅\";\n    flow.set(\"isCalibrated\", true);\n}\n\n// send to gauge\nconst gaugeMsg = {\n    payload: progress\n};\n\n// send to text label\nconst textMsg = {\n    payload: text\n};\n\nreturn [gaugeMsg, textMsg];\n",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 360,
+        "y": 1160,
+        "wires": [
+            [
+                "349a48601729c4b1"
+            ],
+            [
+                "7441d574a5917b07"
+            ]
+        ]
+    },
+    {
+        "id": "349a48601729c4b1",
+        "type": "ui-text",
+        "z": "d1812f6977441004",
+        "group": "7edd138365bae11a",
+        "order": 3,
+        "width": 0,
+        "height": 0,
+        "name": "",
+        "label": "Calibration:",
+        "format": "{{msg.payload}}",
+        "layout": "col-center",
+        "style": false,
+        "font": "",
+        "fontSize": 16,
+        "color": "#717171",
+        "wrapText": false,
+        "className": "",
+        "value": "payloads",
+        "valueType": "msg",
+        "x": 590,
+        "y": 1100,
+        "wires": []
+    },
+    {
+        "id": "7441d574a5917b07",
+        "type": "ui-gauge",
+        "z": "d1812f6977441004",
+        "name": "status",
+        "group": "7edd138365bae11a",
+        "order": 2,
+        "value": "payload",
+        "valueType": "msg",
+        "width": "2",
+        "height": "2",
+        "gtype": "gauge-tile",
+        "gstyle": "needle",
+        "title": "gauge",
+        "alwaysShowTitle": false,
+        "floatingTitlePosition": "top-left",
+        "units": "units",
+        "icon": "",
+        "prefix": "",
+        "suffix": "",
+        "segments": [
+            {
+                "from": "0",
+                "color": "#ffc800",
+                "text": "",
+                "textType": "label"
+            },
+            {
+                "from": "1",
+                "color": "#4bd9ec",
+                "text": "",
+                "textType": "label"
+            }
+        ],
+        "min": 0,
+        "max": 10,
+        "sizeThickness": 16,
+        "sizeGap": 4,
+        "sizeKeyThickness": 8,
+        "styleRounded": true,
+        "styleGlow": false,
+        "className": "",
+        "x": 590,
+        "y": 1160,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "77ee31005dbb13a0",
+        "type": "mqtt out",
+        "z": "d1812f6977441004",
+        "name": "",
+        "topic": "",
+        "qos": "",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "4b36ad713a951d74",
+        "x": 510,
+        "y": 900,
+        "wires": []
+    },
+    {
+        "id": "dd21ddc134d83c54",
+        "type": "mqtt in",
+        "z": "d1812f6977441004",
+        "d": true,
+        "name": "",
+        "topic": "abduction/#",
+        "qos": "0",
+        "datatype": "auto-detect",
+        "broker": "4b36ad713a951d74",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 110,
+        "y": 160,
+        "wires": [
+            [
+                "d1746b8b91501325"
+            ]
+        ]
+    },
+    {
+        "id": "8576fe4ffb9ab214",
+        "type": "inject",
+        "z": "d1812f6977441004",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "1",
+        "crontab": "",
+        "once": true,
+        "onceDelay": 0.1,
+        "topic": "PIP",
+        "payload": "1",
+        "payloadType": "num",
+        "x": 70,
+        "y": 60,
+        "wires": [
+            [
+                "d1746b8b91501325"
+            ]
+        ]
+    },
+    {
+        "id": "81b02f13e24b12b9",
+        "type": "ui-group",
+        "name": "Index Controls",
+        "page": "38e753d080b99624",
+        "width": "6",
+        "height": 1,
+        "order": 6,
+        "showTitle": true,
+        "className": "",
+        "visible": "true",
+        "disabled": "false",
+        "groupType": "default"
+    },
+    {
+        "id": "36166cdf54286014",
+        "type": "ui-base",
+        "name": "My Dashboard",
+        "path": "/dashboard",
+        "appIcon": "",
+        "includeClientData": true,
+        "acceptsClientConfig": [
+            "ui-notification",
+            "ui-control"
+        ],
+        "showPathInSidebar": false,
+        "headerContent": "page",
+        "navigationStyle": "default",
+        "titleBarStyle": "default",
+        "showReconnectNotification": true,
+        "notificationDisplayTime": 1,
+        "showDisconnectNotification": true,
+        "allowInstall": false
+    },
+    {
+        "id": "7edd138365bae11a",
+        "type": "ui-group",
+        "name": "Dropdown Group",
+        "page": "38e753d080b99624",
+        "width": "6",
+        "height": 1,
+        "order": 7,
+        "showTitle": false,
+        "className": "",
+        "visible": "true",
+        "disabled": "false",
+        "groupType": "default"
+    },
+    {
+        "id": "4b36ad713a951d74",
+        "type": "mqtt-broker",
+        "name": "",
+        "broker": "localhost",
+        "port": 1883,
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": 4,
+        "keepalive": 60,
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    },
+    {
+        "id": "38e753d080b99624",
+        "type": "ui-page",
+        "name": "Range of Motion Tracking",
+        "ui": "36166cdf54286014",
+        "path": "/page1",
+        "icon": "home",
+        "layout": "grid",
+        "theme": "8f91d3c43d41b585",
+        "breakpoints": [
+            {
+                "name": "Default",
+                "px": "0",
+                "cols": "3"
+            },
+            {
+                "name": "Tablet",
+                "px": "576",
+                "cols": "6"
+            },
+            {
+                "name": "Small Desktop",
+                "px": "768",
+                "cols": "9"
+            },
+            {
+                "name": "Desktop",
+                "px": "1024",
+                "cols": "12"
+            }
+        ],
+        "order": 2,
+        "className": "",
+        "visible": "true",
+        "disabled": "false"
+    },
+    {
+        "id": "8f91d3c43d41b585",
+        "type": "ui-theme",
+        "name": "Default Theme",
+        "colors": {
+            "surface": "#3584e4",
+            "primary": "#1a5fb4",
+            "bgPage": "#3d3846",
+            "groupBg": "#000000",
+            "groupOutline": "#1a5fb4"
+        },
+        "sizes": {
+            "density": "comfortable",
+            "pagePadding": "12px",
+            "groupGap": "12px",
+            "groupBorderRadius": "4px",
+            "widgetGap": "12px"
+        }
+    },
+    {
+        "id": "dce9679b46ef8924",
+        "type": "global-config",
+        "env": [],
+        "modules": {
+            "@flowfuse/node-red-dashboard": "1.29.0"
+        }
+    }
+]
